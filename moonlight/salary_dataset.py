@@ -37,8 +37,8 @@ class LeagueSalaryDataset(Dataset):
         self.df["Indicator"] = 1
         self.df = self.df.pivot_table(index=["playerid", "teamname", "Salary"], columns="Position(s)",
                                       values="Indicator")
-        if "Util" in self.df.columns:
-            self.df = self.df.drop(columns=["Util"])
+        # if "Util" in self.df.columns:
+        #     self.df = self.df.drop(columns=["Util"])
         self.df = self.df.fillna(0)
         self.df = self.df.div(self.df.sum(axis=1), axis=0)
         self.df = self.df.reset_index()
