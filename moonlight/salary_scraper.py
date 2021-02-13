@@ -13,7 +13,7 @@ class SalaryDataset(Dataset):
         super().__init__()
         self.min_league_id = 1
         self.max_league_id = 1500
-        self.today = datetime.datetime.today().strftime('%m/%d/%Y')
+        self.today = datetime.datetime.today().strftime('%m-%d-%Y')
 
         self.league_ids = []
         self.output_path = f"~/Dropbox (Princeton)/Public/ottoneu/salaries_{self.today}.csv"
