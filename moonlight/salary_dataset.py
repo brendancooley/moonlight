@@ -32,6 +32,7 @@ class LeagueSalaryDataset(Dataset):
         self.df["Salary"] = self.df["Salary"].str[1:].astype(int)
 
     def _position_indicators(self):
+        # TODO migration position collection to projections
         self.df["Position(s)"] = self.df["Position(s)"].str.split("/")
         self.df = self.df.explode("Position(s)")
         self.df["Indicator"] = 1
