@@ -45,5 +45,5 @@ class PitcherProjectionDataset(ProjectionDataset):
         self.input_cols = ["IP", "SO", "H", "BB", "HR"]
 
     def _compute_fg_points(self):
-        self.df[self.points_col] = .4*self.df["IP"] + 2*self.df["SO"] - 2.6*self.df["H"] - 3*self.df["BB"] - \
+        self.df[self.points_col] = 7.4*self.df["IP"] + 2*self.df["SO"] - 2.6*self.df["H"] - 3*self.df["BB"] - \
                                    12.3*self.df["HR"]

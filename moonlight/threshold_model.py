@@ -8,4 +8,4 @@ class ThresholdModel:
 
     def __init__(self):
         self.sd = SalaryDataset()
-        self.data = self.sd.load_from_csv()
+        self.salaries = self.sd.load_from_csv()

@@ -1,7 +1,9 @@
 import requests
+import pandas as pd
 from bs4 import BeautifulSoup
 
 from moonlight.dataset import Dataset
+from moonlight.steamer_dataset import BatterProjectionDataset, PitcherProjectionDataset
 
 
 class LeagueSalaryDataset(Dataset):
@@ -9,11 +11,15 @@ class LeagueSalaryDataset(Dataset):
     def __init__(self, league_id: int = 1203):
         super().__init__()
         self.league_id = league_id
-        self.primary_keys = ["playerid", "teamname"]
+        self.primary_keys = ["playerid"]
         self.col_renamer = {"FG MajorLeagueID": "playerid", "Team Name": "teamname"}
-        self.input_cols = ["Salary", "Position(s)"]
+        self.input_cols = ["Salary", "Position(s)", "teamname"]
         self.csv_path = f"https://ottoneu.fangraphs.com/{self.league_id}/rosterexport?csv=1"
         self.settings_url = f"https://ottoneu.fangraphs.com/{self.league_id}/settings"
+
+        self.batters_steamer = BatterProjectionDataset().build_dataset()
+        self.pitchers_steamer = PitcherProjectionDataset().build_dataset()
+        self.projections = pd.concat([self.batters_steamer, self.pitchers_steamer])
 
     def build_dataset(self):
         self._read_csv()
@@ -26,7 +32,7 @@ class LeagueSalaryDataset(Dataset):
         return self.df
 
     def _remove_restricted_list(self):
-        self.df = self.df.loc[self.df.index.get_level_values("teamname") != "Restricted List"]
+        self.df = self.df.loc[self.df["teamname"] != "Restricted List"]
 
     def _strip_salary(self):
         self.df["Salary"] = self.df["Salary"].str[1:].astype(int)
@@ -47,7 +53,7 @@ class LeagueSalaryDataset(Dataset):
         self.df = self.df.set_index(self.primary_keys)
 
     def _add_n_teams(self):
-        self.df["n_teams"] = len(self.df.index.get_level_values("teamname").unique())
+        self.df["n_teams"] = len(self.df["teamname"].unique())
 
     def _add_format(self):
         soup = BeautifulSoup(requests.get(self.settings_url).content, features="lxml")

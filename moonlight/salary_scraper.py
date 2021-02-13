@@ -15,7 +15,7 @@ class SalaryDataset(Dataset):
         self.max_league_id = 1500
         self.today = datetime.datetime.today().strftime('%m-%d-%Y')
 
-        self.positions = ["SP", "RP", "C", "1B", "2B", "3B", "SS", "OF"]
+        self.positions = ["SP", "RP", "C", "1B", "2B", "3B", "SS", "OF", "Util"]
         self.cols = ["Salary", "format", "n_teams"] + self.positions
         self.primary_keys = ["playerid", "teamname"]
         self.formats = ["FanGraphs Points", "H2H FanGraphs Points"]
