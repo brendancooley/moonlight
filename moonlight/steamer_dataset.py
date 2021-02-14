@@ -1,9 +1,8 @@
 import pandas as pd
+import numpy as np
 from typing import *
 
 from moonlight.dataset import Dataset
-
-# playerid map: https://www.smartfantasybaseball.com/PLAYERIDMAPCSV
 
 
 class ProjectionDataset(Dataset):
@@ -24,7 +23,8 @@ class ProjectionDataset(Dataset):
         self._derive_positions()
         self._compute_fg_points()
         # return self.df[self.meta_cols + [self.points_col]].sort_values(self.points_col, ascending=False)
-        return self.df.sort_values(self.points_col, ascending=False)[self.meta_cols + [self.points_col] + self.position_cols]
+        return self.df.sort_values(self.points_col, ascending=False)[self.meta_cols + [self.points_col] +
+                                                                     self.position_cols]
 
     def _compute_fg_points(self):
         raise NotImplementedError
@@ -53,9 +53,7 @@ class BatterProjectionDataset(ProjectionDataset):
         self.df["gOF"] = self.df["gLF"] + self.df["gCF"] + self.df["gRF"]
         self.g_proj_cols += ["gOF"]
         self.df[self.g_proj_cols] = (self.df[self.g_proj_cols] >= self.eligible_thres) * 1
-        print(self.df)
         self.df = self.df.rename(columns={x: f"p{x[1:]}" for x in self.g_proj_cols})
-        print(self.df)
         self.df[self.position_cols] = self.df[self.position_cols].div(self.df[self.position_cols].sum(axis=1), axis=0)
 
 
@@ -65,10 +63,31 @@ class PitcherProjectionDataset(ProjectionDataset):
         super().__init__()
         self.csv_path = "~/Dropbox (Princeton)/baseball/steamer_pitchers.csv"
         self.query_cols = ["IP", "K", "H", "BB", "HR", "SV", "HLD"] + ["start_percent"]
+        self.position_cols = ["pSP", "pRP"]
+        self.sp_threshold = .5
 
     def _compute_fg_points(self):
         self.df[self.points_col] = 7.4*self.df["IP"] + 2*self.df["K"] - 2.6*self.df["H"] - 3*self.df["BB"] - \
                                    12.3*self.df["HR"] + 5*self.df["SV"] + 4*self.df["HLD"]
 
     def _derive_positions(self):
-        pass
+        self.df["pRP"] = np.where(self.df["start_percent"] < .5, 1, 0)
+        self.df["pSP"] = np.where(self.df["start_percent"] >= .5, 1, 0)
+
+
+class PlayerProjectionDataset(Dataset):
+
+    def __init__(self):
+        super().__init__()
+        self.ppd = PitcherProjectionDataset()
+        self.bpd = BatterProjectionDataset()
+        self.position_cols = self.ppd.position_cols + self.bpd.position_cols
+        self.points_col = self.ppd.points_col
+
+    def build_dataset(self):
+        pitchers = self.ppd.build_dataset()
+        batters = self.bpd.build_dataset()
+        self.df = pd.concat([pitchers, batters])
+        self.df[self.position_cols] = self.df[self.position_cols].fillna(0)
+        self.df = self.df.loc[self.df[self.position_cols].sum(axis=1) > 0]
+        return self.df.sort_values(self.points_col, ascending=False)
