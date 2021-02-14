@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression, LinearRegression
 import scipy.optimize as opt
 from typing import *
+import datetime
 
 from moonlight.salary_scraper import SalaryDataset
 from moonlight.steamer_dataset import PlayerProjectionDataset
@@ -23,12 +24,18 @@ class ValuationModel:
         self.tm: Optional[ThresholdModel] = None
         self.threshold_df: Optional[pd.DataFrame] = None
         self.slope: Optional[float] = None
+        self.inflation_fct = 1.
+
+        self.today = datetime.datetime.today().strftime('%m-%d-%Y')
+        self.output_path = f"~/Dropbox (Princeton)/Public/ottoneu/valuations_{self.today}.csv"
 
     def build_dataset(self):
         self.solve_thresholds()
         self.compute_thresholds()
         self.solve_slope()
         self.compute_value()
+        self.prepare_output()
+        self.data.to_csv(self.output_path)
 
     def solve_thresholds(self):
         self._standardize_data()
@@ -49,10 +56,14 @@ class ValuationModel:
         slope_data = self.data.loc[(self.data["PAR"] > 0) & (self.data["Salary"] > 0)]
         sm = SlopeModel(x=np.array(slope_data["PAR"]), y=np.array(slope_data["Salary"]))
         sm.fit()
-        self.slope = sm.model.coef_[0]
+        self.slope = sm.model.coef_[0] * self.inflation_fct
 
     def compute_value(self):
         self.data["Value"] = self.data["PAR"] * self.slope
+
+    def prepare_output(self):
+        self.data[self.position_cols] = (self.data[self.position_cols] > 0)
+        self.data = self.data.drop(columns=self.n_team_cols + ["format", "n_teams"])
 
     def _standardize_data(self):
         self.data = self.data.loc[self.data["n_teams"].isin([12, 14, 16])]
