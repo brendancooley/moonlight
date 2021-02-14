@@ -3,24 +3,33 @@ from typing import *
 
 from moonlight.dataset import Dataset
 
+# playerid map: https://www.smartfantasybaseball.com/PLAYERIDMAPCSV
+
 
 class ProjectionDataset(Dataset):
 
     def __init__(self):
         super().__init__()
-        self.primary_keys = ["playerid"]
-        self.meta_cols = ["Name", "Team"]
+        self.primary_keys = ["mlbamid"]
+        self.meta_cols = ["firstname", "lastname"]
         self.points_col = "fg_points"
+        self.query_cols: Optional[List[str]] = None
+        self.position_cols: Optional[List[str]] = None
 
         self.input_cols: Optional[List[str]] = None
 
     def build_dataset(self):
         self._read_csv()
-        self.df = self.df[self.meta_cols + self.input_cols]
+        self.df = self.df[self.meta_cols + self.query_cols]
+        self._derive_positions()
         self._compute_fg_points()
-        return self.df[self.meta_cols + [self.points_col]].sort_values(self.points_col, ascending=False)
+        # return self.df[self.meta_cols + [self.points_col]].sort_values(self.points_col, ascending=False)
+        return self.df.sort_values(self.points_col, ascending=False)[self.meta_cols + [self.points_col] + self.position_cols]
 
     def _compute_fg_points(self):
+        raise NotImplementedError
+
+    def _derive_positions(self):
         raise NotImplementedError
 
 
@@ -28,22 +37,38 @@ class BatterProjectionDataset(ProjectionDataset):
 
     def __init__(self):
         super().__init__()
-        self.csv_path = "https://www.dropbox.com/s/yvn6dh1cgmvtfo5/batters.csv?dl=1"
-        self.input_cols = ["AB", "H", "2B", "3B", "HR", "BB", "HBP", "SB", "CS"]
+        self.csv_path = "~/Dropbox (Princeton)/baseball/steamer_hitters.csv"
+        self.g_proj_cols = ["gC", "g1B", "g2B", "g3B", "gSS", "gLF", "gCF", "gRF", "gDH"]
+        self.query_cols = ["AB", "H", "2B", "3B", "HR", "BB", "HBP", "SB", "CS"] + self.g_proj_cols
+        self.position_cols = ["pC", "p1B", "p2B", "p3B", "pSS", "pOF", "pDH"]
+
+        self.eligible_thres = 10
 
     def _compute_fg_points(self):
         self.df[self.points_col] = -1*self.df["AB"] + 5.6*self.df["H"] + 2.9*self.df["2B"] + 5.7*self.df["3B"] + \
                                    9.4*self.df["HR"] + 3.0*self.df["BB"] + 3.0*self.df["HBP"] + 1.9*self.df["SB"] - \
                                    2.8*self.df["CS"]
 
+    def _derive_positions(self):
+        self.df["gOF"] = self.df["gLF"] + self.df["gCF"] + self.df["gRF"]
+        self.g_proj_cols += ["gOF"]
+        self.df[self.g_proj_cols] = (self.df[self.g_proj_cols] >= self.eligible_thres) * 1
+        print(self.df)
+        self.df = self.df.rename(columns={x: f"p{x[1:]}" for x in self.g_proj_cols})
+        print(self.df)
+        self.df[self.position_cols] = self.df[self.position_cols].div(self.df[self.position_cols].sum(axis=1), axis=0)
+
 
 class PitcherProjectionDataset(ProjectionDataset):
 
     def __init__(self):
         super().__init__()
-        self.csv_path = "https://www.dropbox.com/s/l4pcsmwn6xy7pem/pitcher.csv?dl=1"
-        self.input_cols = ["IP", "SO", "H", "BB", "HR"]
+        self.csv_path = "~/Dropbox (Princeton)/baseball/steamer_pitchers.csv"
+        self.query_cols = ["IP", "K", "H", "BB", "HR", "SV", "HLD"] + ["start_percent"]
 
     def _compute_fg_points(self):
-        self.df[self.points_col] = 7.4*self.df["IP"] + 2*self.df["SO"] - 2.6*self.df["H"] - 3*self.df["BB"] - \
-                                   12.3*self.df["HR"]
+        self.df[self.points_col] = 7.4*self.df["IP"] + 2*self.df["K"] - 2.6*self.df["H"] - 3*self.df["BB"] - \
+                                   12.3*self.df["HR"] + 5*self.df["SV"] + 4*self.df["HLD"]
+
+    def _derive_positions(self):
+        pass
