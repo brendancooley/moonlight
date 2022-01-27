@@ -69,7 +69,7 @@ class PlayerIDDataset(Dataset):
         super().__init__()
         self.primary_keys = ["mlbamid"]
         self.col_renamer = {"MLBID": "mlbamid", "IDFANGRAPHS": "fangraphsid"}
-        self.csv_path = "~/Dropbox (Princeton)/baseball/sfbb_playerids.csv"
+        self.csv_path = "~/Dropbox (Personal)/baseball/sfbb_playerids.csv"
 
     def get_mlbamid_map(self, key: str):
         self._read_csv()

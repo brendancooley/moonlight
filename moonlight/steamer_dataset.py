@@ -10,7 +10,7 @@ class ProjectionDataset(Dataset):
     def __init__(self):
         super().__init__()
         self.primary_keys = ["mlbamid"]
-        self.meta_cols = ["firstname", "lastname"]
+        self.meta_cols = ["firstname", "lastname", "age"]
         self.points_col = "fg_points"
         self.query_cols: Optional[List[str]] = None
         self.position_cols: Optional[List[str]] = None
@@ -35,9 +35,9 @@ class ProjectionDataset(Dataset):
 
 class BatterProjectionDataset(ProjectionDataset):
 
-    def __init__(self):
+    def __init__(self, season: int = 2022):
         super().__init__()
-        self.csv_path = "~/Dropbox (Princeton)/baseball/steamer_hitters.csv"
+        self.csv_path = f"~/Dropbox (Personal)/baseball/steamer_hitters_{season}.csv"
         self.g_proj_cols = ["gC", "g1B", "g2B", "g3B", "gSS", "gLF", "gCF", "gRF", "gDH"]
         self.query_cols = ["AB", "H", "2B", "3B", "HR", "BB", "HBP", "SB", "CS"] + self.g_proj_cols
         self.position_cols = ["pC", "p1B", "p2B", "p3B", "pSS", "pOF", "pDH"]
@@ -59,9 +59,9 @@ class BatterProjectionDataset(ProjectionDataset):
 
 class PitcherProjectionDataset(ProjectionDataset):
 
-    def __init__(self):
+    def __init__(self, season: int = 2022):
         super().__init__()
-        self.csv_path = "~/Dropbox (Princeton)/baseball/steamer_pitchers.csv"
+        self.csv_path = f"~/Dropbox (Personal)/baseball/steamer_pitchers_{season}.csv"
         self.query_cols = ["IP", "K", "H", "BB", "HR", "SV", "HLD"] + ["start_percent"]
         self.position_cols = ["pSP", "pRP"]
         self.sp_threshold = .5

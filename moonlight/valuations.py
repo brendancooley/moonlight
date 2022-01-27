@@ -11,23 +11,23 @@ from moonlight.steamer_dataset import PlayerProjectionDataset
 
 class ValuationModel:
 
-    def __init__(self):
+    def __init__(self, date: Optional[str] = None):
         self.projection_ds = PlayerProjectionDataset()
         self.position_cols = self.projection_ds.position_cols
         self.n_team_cols: Optional[List[str]] = None
         self.points_col = self.projection_ds.points_col
-        self.data = SalaryDataset().load_from_csv()
+        self.data = SalaryDataset(date=date).load_from_csv()
 
         # TODO fit in outer loop
-        self.threshold_tol: float = .25  # probably want this lower pre-auction and higher later
+        self.threshold_tol: float = .5  # probably want this lower pre-auction and higher later
 
         self.tm: Optional[ThresholdModel] = None
         self.threshold_df: Optional[pd.DataFrame] = None
         self.slope: Optional[float] = None
         self.inflation_fct = 1.
 
-        self.today = datetime.datetime.today().strftime('%m-%d-%Y')
-        self.output_path = f"~/Dropbox (Princeton)/Public/ottoneu/valuations_{self.today}.csv"
+        self.date = datetime.datetime.today().strftime('%m-%d-%Y') if date is None else date
+        self.output_path = f"~/Dropbox (Personal)/Public/ottoneu/valuations_{self.date}.csv"
 
     def build_dataset(self):
         self.solve_thresholds()
@@ -105,7 +105,7 @@ class ThresholdModel:
         self.x = x
         self.y = y
 
-        self.model = LogisticRegression(penalty='none')
+        self.model = LogisticRegression(penalty='none', max_iter=5000)
 
     def fit(self):
         self.model.fit(X=self.x, y=self.y)

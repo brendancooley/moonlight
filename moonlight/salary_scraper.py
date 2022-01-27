@@ -2,6 +2,7 @@ import requests
 import pandas as pd
 import logging
 import datetime
+from typing import *
 
 from moonlight.dataset import Dataset
 from moonlight.salary_dataset import LeagueSalaryDataset
@@ -9,16 +10,16 @@ from moonlight.salary_dataset import LeagueSalaryDataset
 
 class SalaryDataset(Dataset):
 
-    def __init__(self):
+    def __init__(self, date: Optional[str] = None):
         super().__init__()
         self.min_league_id = 1
         self.max_league_id = 1500
-        self.today = datetime.datetime.today().strftime('%m-%d-%Y')
+        self.date = datetime.datetime.today().strftime('%m-%d-%Y') if date is None else date
 
         self.primary_keys = ["mlbamid", "teamname", "league_id"]
         self.formats = ["FanGraphs Points", "H2H FanGraphs Points"]
         self.league_ids = []
-        self.output_path = f"~/Dropbox (Princeton)/Public/ottoneu/salaries_{self.today}.csv"
+        self.output_path = f"~/Dropbox (Personal)/Public/ottoneu/salaries_{self.date}.csv"
 
     def scrape(self):
         self._collect_ids()
